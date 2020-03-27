@@ -79,9 +79,23 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
             #     centroid = None
 
             if centroid is not None:
-                centroid_list.appendleft(centroid)
+                flag = 0
+                if centroid_list != None:
+                    for i in range(0,3):
+                        for j in range(0,3):
+                            buf_centroid = ((centroid[0] + i),(centroid[1] + j))
+                            #print(buf_centroid)
+                            if buf_centroid in centroid_list:
+                                print("Yes")
+                                flag = 1
+                                break
+                        if flag == 1:
+                            break
 
-                #print(centroid_list)
+                if flag == 0:
+                    centroid_list.appendleft(centroid)
+
+                print(centroid_list)
                 sorted(centroid_list)
 
                 for i in np.arange(1, len(centroid_list)):
@@ -105,6 +119,7 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
 
                     thickness = int(np.sqrt(frame_end / float(i + 1)) * 2.5)
                     cv2.line(frame, centroid_list[i - 1], centroid_list[i], (0, 0, 255), thickness)
+
 
                 cv2.putText(frame, direction, (20, 50), cv2.FONT_HERSHEY_SIMPLEX,
                             0.65, (77, 255, 9), 1)
