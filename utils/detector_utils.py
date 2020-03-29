@@ -59,6 +59,7 @@ def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, i
             p1 = (int(left), int(top))
             p2 = (int(right), int(bottom))
             area = (int(right) - int(left)) * (int(bottom) - int(top))
+
             if area > max_area and area > 1200 and area < 9000:
                 max_area = area
                 selected_hand = [int(left), int(top), int(right), int(bottom)]
@@ -70,8 +71,8 @@ def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, i
             #print(selected_hand)
             centre_x = ((selected_hand[0] + selected_hand[2]) / 2)
             centre_y =  ((selected_hand[1] + selected_hand[3]) / 2)
-            return centre_x,centre_y
-    return None,None
+            return centre_x,centre_y,area
+    return None,None,None
 
 
 

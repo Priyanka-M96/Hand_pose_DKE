@@ -42,16 +42,14 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
             "F:/Hand_pose_DKE/cnn/models/hand_poses_wGarbage_10.h5")
     except Exception as e:
         print(e)
-    centroid_list = deque(maxlen=buffer)
-    direction = ""
-    (dX, dY) = (0, 0)
+
     detection_centres_x = []
     detection_centres_y = []
     is_centres_filled = False
     detected = False
     index = 0
-    direction_X = ""
-    direction_Y = ""
+    detection_area = []
+
     while True:
         # print("> ===== in worker loop, frame ", frame_count)
         frame = input_q.get()
@@ -69,18 +67,23 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
                                                scores, boxes, cap_params['im_width'], cap_params['im_height'], frame)
 
             # get boundary box
-            centre_x,centre_y = detector_utils.draw_box_on_image(cap_params['num_hands_detect'], cap_params["score_thresh"],
+            centre_x,centre_y,area = detector_utils.draw_box_on_image(cap_params['num_hands_detect'], cap_params["score_thresh"],
                                                       scores, boxes, cap_params['im_width'], cap_params['im_height'],
                                                       frame)
             #print(detection_centres)
             if is_centres_filled:
                 detection_centres_x = detection_centres_x[1:10]
                 detection_centres_y = detection_centres_y[1:10]
+                detection_area = detection_area[1:10]
+
                 detection_centres_x.append(centre_x)
                 detection_centres_y.append(centre_y)
+                detection_area.append(area)
             else:
                 detection_centres_x.append(centre_x)
                 detection_centres_y.append(centre_y)
+                detection_area.append(area)
+
 
             index += 1
             if (index == 10):
@@ -89,17 +92,24 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
 
             centres_x = detection_centres_x.copy()
             centres_y = detection_centres_y.copy()
+
+            areas = detection_area.copy()
+
             centres_x = [v for v in centres_x if v]
             centres_y = [v for v in centres_y if v]
+
+            areas = [a for a in areas if a]
             direction = ""
+
             if detected:
                 detection_centres_x = []
                 detection_centres_y = []
                 is_centres_filled = False
                 index = 0
                 detected = False
-
-            if len(centres_x) > 3 and is_centres_filled and len(centres_y) > 3:
+                detection_area = []
+            #print(areas)
+            if len(centres_x) > 3 and is_centres_filled and len(centres_y) > 3 and len(areas) > 3:
                 # centres_asc = centres.copy().sort()
                 # centres_dsc = centres.copy().sort(reverse=True)
                 # print(centres)
@@ -121,7 +131,7 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
                     print(direction)
 
 
-                if ((centres_y[-1] - centres_y[0] > 50)):
+                elif ((centres_y[-1] - centres_y[0] > 50)):
                     direction = "Down"
                     detected = True
                     print(direction)
@@ -130,6 +140,18 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
                     direction = "Up"
                     detected = True
                     print(direction)
+
+                elif areas[-1]-5000 > areas [0] :
+                    direction = "Zoom in"
+                    detected = True
+                    print(direction)
+                elif areas[-1] < areas[0]-3000:
+                    direction = "Zoom out"
+                    detected = True
+                    print(direction)
+
+
+                #print("hello")
 
             cv2.putText(frame, direction, (20, 50), cv2.FONT_HERSHEY_SIMPLEX,
                         0.65, (77, 255, 9), 1)
@@ -143,7 +165,7 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
 if __name__ == '__main__':
 
     vid_src = 0
-    num_hands = 2
+    num_hands = 1
     fps = 1
     width = 300
     height = 200
