@@ -24,6 +24,7 @@ frame_start = 0
 frame_mid = 3
 frame_end = 5
 buffer = 5
+index = 0
 
 
 # Create a worker thread that loads graph and
@@ -38,12 +39,19 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
     print(">> loading keras model for worker")
     try:
         model, classification_graph, session = classifier.load_KerasGraph(
-            "F:/Github/Hand_pose_DKE/cnn/models/hand_poses_wGarbage_10.h5")
+            "F:/Hand_pose_DKE/cnn/models/hand_poses_wGarbage_10.h5")
     except Exception as e:
         print(e)
     centroid_list = deque(maxlen=buffer)
     direction = ""
     (dX, dY) = (0, 0)
+    detection_centres_x = []
+    detection_centres_y = []
+    is_centres_filled = False
+    detected = False
+    index = 0
+    direction_X = ""
+    direction_Y = ""
     while True:
         # print("> ===== in worker loop, frame ", frame_count)
         frame = input_q.get()
@@ -51,109 +59,96 @@ def worker(input_q, output_q, cap_params, frame_count, poses):
             # Actual detection. Variable boxes contains the bounding box cordinates for hands detected,
             # while scores contains the confidence for each of these boxes.
             # Hint: If len(boxes) > 1 , you may assume you have found atleast one hand (within your score threshold)
-            norm_image = cv2.normalize(frame, None, 0,255, norm_type=cv2.NORM_MINMAX)
-            boxes, scores = detector_utils.detect_objects(norm_image, detection_graph, sess)
+            # frame = cv2.normalize(frame, None, 0,255, norm_type=cv2.NORM_MINMAX)
+            boxes, scores = detector_utils.detect_objects(frame, detection_graph, sess)
 
             # print(boxes[0])
 
             # get region of interest
-            res = detector_utils.get_box_image(cap_params['num_hands_detect'], cap_params["score_thresh"],
+            detector_utils.get_box_image(cap_params['num_hands_detect'], cap_params["score_thresh"],
                                                scores, boxes, cap_params['im_width'], cap_params['im_height'], frame)
 
             # get boundary box
-            detector_utils.draw_box_on_image(cap_params['num_hands_detect'], cap_params["score_thresh"],
-                                             scores, boxes, cap_params['im_width'], cap_params['im_height'], frame)
+            centre_x,centre_y = detector_utils.draw_box_on_image(cap_params['num_hands_detect'], cap_params["score_thresh"],
+                                                      scores, boxes, cap_params['im_width'], cap_params['im_height'],
+                                                      frame)
+            #print(detection_centres)
+            if is_centres_filled:
+                detection_centres_x = detection_centres_x[1:10]
+                detection_centres_y = detection_centres_y[1:10]
+                detection_centres_x.append(centre_x)
+                detection_centres_y.append(centre_y)
+            else:
+                detection_centres_x.append(centre_x)
+                detection_centres_y.append(centre_y)
 
-            # classify hand pose
-            if res is not None and frame_count == 0:
-                class_res = classifier.classify(model, classification_graph, session, res)
-                class_pred = class_res.argmax(axis=-1)
-                predicted_label = poses[int(class_pred)]
-                #print(predicted_label)
+            index += 1
+            if (index == 10):
+                index = 0
+                is_centres_filled = True
 
-            if predicted_label == "Start" and frame_count <= frame_end:
-                centroid = detector_utils.get_centroid(cap_params['num_hands_detect'], cap_params["score_thresh"],
-                                                   scores, boxes, cap_params['im_width'], cap_params['im_height'],
-                                                   frame)
-            # elif scores is None:
-            #     centroid = None
+            centres_x = detection_centres_x.copy()
+            centres_y = detection_centres_y.copy()
+            centres_x = [v for v in centres_x if v]
+            centres_y = [v for v in centres_y if v]
+            direction = ""
+            if detected:
+                detection_centres_x = []
+                detection_centres_y = []
+                is_centres_filled = False
+                index = 0
+                detected = False
 
-            if centroid is not None:
-                flag = 0
-                if centroid_list != None:
-                    for i in range(0,3):
-                        for j in range(0,3):
-                            buf_centroid = ((centroid[0] + i),(centroid[1] + j))
-                            #print(buf_centroid)
-                            if buf_centroid in centroid_list:
-                                print("Yes")
-                                flag = 1
-                                break
-                        if flag == 1:
-                            break
+            if len(centres_x) > 3 and is_centres_filled and len(centres_y) > 3:
+                # centres_asc = centres.copy().sort()
+                # centres_dsc = centres.copy().sort(reverse=True)
+                # print(centres)
 
-                if flag == 0:
-                    centroid_list.appendleft(centroid)
+                if centres_x[-1] - centres_x[0] > 100:
+                    direction = "Right"
+                    keyboard.press_and_release('left')
+                    detected = True
+                    # print("Last x:", centres_x[-1])
+                    # print("First x: ", centres_x[0])
+                    # print("Last y:", centres_y[-1])
+                    # print("First y:", centres_y[0])
+                    print(direction)
 
-                print(centroid_list)
-                sorted(centroid_list)
-
-                for i in np.arange(1, len(centroid_list)):
-                    # if centroid_list[i-1] is None or centroid_list[i] is None:
-                    #     continue
-                    if frame_count == frame_end and centroid_list[-5] != None and i == 1:
-                        dX = centroid_list[-5][0] - centroid_list[i][0]
-                        dY = centroid_list[-5][1] - centroid_list[i][1]
-                        (dirX,dirY) = ("","")
-
-                        if np.abs(dX) > 10:
-                            dirX = "Right" if np.sign(dX) == 1 else "Left"
-
-                        if np.abs(dY) > 10:
-                            dirY = "DOWN" if np.sign(dY) == 1 else "UP"
-
-                        if dirX != "" and dirY != "":
-                            direction = "{}-{}".format(dirY, dirX)
-                        else:
-                            direction = dirX if dirX != "" else dirY
-
-                    thickness = int(np.sqrt(frame_end / float(i + 1)) * 2.5)
-                    cv2.line(frame, centroid_list[i - 1], centroid_list[i], (0, 0, 255), thickness)
+                elif centres_x[0] - centres_x[-1] > 100:
+                    direction = "Left"
+                    keyboard.press_and_release('right')
+                    detected = True
+                    print(direction)
 
 
-                cv2.putText(frame, direction, (20, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.65, (77, 255, 9), 1)
-                cv2.putText(frame, "dx: {}, dy: {}".format(dX, dY),
-                            (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.35, (0, 0, 255), 1)
-                # if direction == "Left":
-                #     keyboard.press_and_release('left')
-                #     #time.sleep(2)
-                # elif direction == "Right":
-                #     keyboard.press_and_release('right')
-                #     time.sleep(2)
+                if ((centres_y[-1] - centres_y[0] > 50)):
+                    direction = "Down"
+                    detected = True
+                    print(direction)
 
-                frame_count += 1
-                if frame_count >= frame_end:
-                    frame_count = 0
-                    #centroid_list.clear()
-                    direction = ""
-                    #flag = 1
+                elif centres_y[0] - centres_y[-1] > 50:
+                    direction = "Up"
+                    detected = True
+                    print(direction)
+
+            cv2.putText(frame, direction, (20, 50), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.65, (77, 255, 9), 1)
 
         output_q.put(frame)
-# else:
-#     output_q.put(frame)
+    # else:
+    #     output_q.put(frame)
     sess.close()
+
 
 if __name__ == '__main__':
 
     vid_src = 0
-    num_hands = 1
+    num_hands = 2
     fps = 1
     width = 300
     height = 200
     display = 1
-    num_workers = 4
+    num_workers = 1
     queue_size = 5
 
     input_q = Queue(maxsize=queue_size)
@@ -199,7 +194,6 @@ if __name__ == '__main__':
             index += 1
 
             input_q.put(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-
 
             output_frame = output_q.get()
 

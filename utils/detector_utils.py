@@ -9,7 +9,6 @@ import cv2
 from utils import label_map_util
 from collections import defaultdict
 
-
 detection_graph = tf.Graph()
 sys.path.append("..")
 
@@ -49,36 +48,41 @@ def load_inference_graph():
 # draw the detected bounding boxes on the images
 # You can modify this to also draw a label.
 def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
+    selected_centre = None
+    max_area = 0
+    selected_hand = None
+    detected = False
     for i in range(num_hands_detect):
         if (scores[i] > score_thresh):
             (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
                                           boxes[i][0] * im_height, boxes[i][2] * im_height)
             p1 = (int(left), int(top))
             p2 = (int(right), int(bottom))
+            area = (int(right) - int(left)) * (int(bottom) - int(top))
+            if area > max_area and area > 1200 and area < 9000:
+                max_area = area
+                selected_hand = [int(left), int(top), int(right), int(bottom)]
+                detected = True
             cv2.rectangle(image_np, p1, p2, (77, 255, 9), 3, 1)
 
-def get_centroid(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
-    for i in range(num_hands_detect):
-        if (scores[i] > score_thresh):
-            (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
-                                          boxes[i][0] * im_height, boxes[i][2] * im_height)
-            p1 = int((left + right) / 2.0)
-            p2 = int((top+ bottom) / 2.0 )
-            centroid = (p1,p2)
-            if centroid is not None:
-                cv2.circle(image_np, centroid, 5, (0, 0, 255), 1)
-            return centroid
+
+        if selected_hand is not None:
+            #print(selected_hand)
+            centre_x = ((selected_hand[0] + selected_hand[2]) / 2)
+            centre_y =  ((selected_hand[1] + selected_hand[3]) / 2)
+            return centre_x,centre_y
+    return None,None
+
+
 
 def get_box_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
     for i in range(num_hands_detect):
         if (scores[i] > score_thresh):
             (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
                                           boxes[i][0] * im_height, boxes[i][2] * im_height)
-            p1 = (int(left), int(top))
-            p2 = (int(right), int(bottom))
-            centroid = (int(left/2), int(top/2))
             return image_np[int(top):int(bottom), int(left):int(right)].copy()
-            #return centroid
+            # return centroid
+
 
 # Show fps value on image.
 def draw_fps_on_image(fps, image_np):
@@ -106,7 +110,7 @@ def detect_objects(image_np, detection_graph, sess):
 
     (boxes, scores, classes, num) = sess.run(
         [detection_boxes, detection_scores,
-            detection_classes, num_detections],
+         detection_classes, num_detections],
         feed_dict={image_tensor: image_np_expanded})
     return np.squeeze(boxes), np.squeeze(scores)
 
@@ -118,7 +122,7 @@ class WebcamVideoStream:
     def __init__(self, src, width, height):
         # initialize the video camera stream and read the first frame
         # from the stream
-        self.stream = cv2.VideoCapture(src+ cv2.CAP_DSHOW)
+        self.stream = cv2.VideoCapture(src + cv2.CAP_DSHOW)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         (self.grabbed, self.frame) = self.stream.read()
