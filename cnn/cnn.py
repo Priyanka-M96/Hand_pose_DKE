@@ -18,7 +18,7 @@ def train():
     batch_size = 32
     epochs = 10
     learning_rate = 0.01
-    model_name = "F:/Github/Hand_pose_DKE/cnn/models/hand_poses_wGarbage_" + str(epochs) + ".h5"
+    model_name = "F:/Realtime_Hand_tracking/cnn/models/hand_poses_wGarbage_" + str(epochs) + ".h5"
 
     # input image dimensions
     img_rows, img_cols = 28, 28
@@ -57,8 +57,8 @@ def train():
 
     datagen.fit(x_train)
 
-    ####### Model structure #######
-    #model building
+    ###### Model structure #######
+    # #model building
     # model = Sequential()
     # #convolutional layer with rectified linear unit activation
     # model.add(Conv2D(32, kernel_size=(3, 3),

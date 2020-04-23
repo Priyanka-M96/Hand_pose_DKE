@@ -1,4 +1,5 @@
 # Utilities for object detector.
+
 import numpy as np
 import sys
 import tensorflow as tf
@@ -9,6 +10,7 @@ import cv2
 from utils import label_map_util
 from collections import defaultdict
 
+
 detection_graph = tf.Graph()
 sys.path.append("..")
 
@@ -17,7 +19,7 @@ _score_thresh = 0.27
 
 MODEL_NAME = 'hand_inference_graph'
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
-PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
+PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph_2.pb'
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = os.path.join(MODEL_NAME, 'hand_label_map.pbtxt')
 
@@ -31,6 +33,7 @@ category_index = label_map_util.create_category_index(categories)
 
 # Load a frozen infrerence graph into memory
 def load_inference_graph():
+
     # load frozen tensorflow model into memory
     print("> ====== loading HAND frozen graph into memory")
     detection_graph = tf.Graph()
@@ -66,15 +69,12 @@ def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, i
                 detected = True
             cv2.rectangle(image_np, p1, p2, (77, 255, 9), 3, 1)
 
-
         if selected_hand is not None:
-            #print(selected_hand)
+            # print(selected_hand)
             centre_x = ((selected_hand[0] + selected_hand[2]) / 2)
-            centre_y =  ((selected_hand[1] + selected_hand[3]) / 2)
-            return centre_x,centre_y,area
-    return None,None,None
-
-
+            centre_y = ((selected_hand[1] + selected_hand[3]) / 2)
+            return centre_x, centre_y, area
+    return None, None, None
 
 def get_box_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
     for i in range(num_hands_detect):
@@ -82,8 +82,6 @@ def get_box_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_he
             (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
                                           boxes[i][0] * im_height, boxes[i][2] * im_height)
             return image_np[int(top):int(bottom), int(left):int(right)].copy()
-            # return centroid
-
 
 # Show fps value on image.
 def draw_fps_on_image(fps, image_np):
@@ -111,7 +109,7 @@ def detect_objects(image_np, detection_graph, sess):
 
     (boxes, scores, classes, num) = sess.run(
         [detection_boxes, detection_scores,
-         detection_classes, num_detections],
+            detection_classes, num_detections],
         feed_dict={image_tensor: image_np_expanded})
     return np.squeeze(boxes), np.squeeze(scores)
 
@@ -123,7 +121,7 @@ class WebcamVideoStream:
     def __init__(self, src, width, height):
         # initialize the video camera stream and read the first frame
         # from the stream
-        self.stream = cv2.VideoCapture(src + cv2.CAP_DSHOW)
+        self.stream = cv2.VideoCapture(src)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         (self.grabbed, self.frame) = self.stream.read()

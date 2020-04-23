@@ -5,7 +5,7 @@ import numpy as np
 from random import randint
 from sklearn.utils import shuffle
 
-pathname = 'F:/Github/Hand_pose_DKE/Poses/'
+pathname = 'F:/Realtime_Hand_tracking/Poses/'
 
 def read_data(req_poses):
     count_im = 0
