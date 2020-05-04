@@ -15,9 +15,9 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import buildPosesDataset as dataset
 
 def train():
-    batch_size = 32
-    epochs = 10
-    learning_rate = 0.01
+    batch_size = 128
+    epochs = 100
+    learning_rate = 0.0001
     model_name = "F:/Realtime_Hand_tracking/cnn/models/hand_poses_wGarbage_" + str(epochs) + ".h5"
 
     # input image dimensions
@@ -47,80 +47,30 @@ def train():
     y_train = keras.utils.to_categorical(y_train, num_classes)
     y_test = keras.utils.to_categorical(y_test, num_classes)
 
-    datagen = ImageDataGenerator(
-        featurewise_center=True,
-        featurewise_std_normalization=True,
-        rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        horizontal_flip=True)
-
-    datagen.fit(x_train)
-
-    ###### Model structure #######
-    # #model building
-    # model = Sequential()
-    # #convolutional layer with rectified linear unit activation
-    # model.add(Conv2D(32, kernel_size=(3, 3),
-    #                 activation='relu',
-    #                 input_shape=input_shape))
-    # # 32 convolution filters used each of size 3x3
-    # # again
-    # model.add(Conv2D(64, (3, 3), activation='relu'))
-    # # 64 convolution filters used each of size 3x3
-    # # choose the best features via pooling
-    # model.add(MaxPooling2D(pool_size=(2, 2)))
-    # # randomly turn neurons on and off to improve convergence
-    # model.add(Dropout(0.25))
-    # # flatten since too many dimensions, we only want a classification output
-    # model.add(Flatten())
-    # # fully connected to get all relevant data
-    # model.add(Dense(128, activation='relu'))
-    # # one more dropout for convergence' sake :)
-    # model.add(Dropout(0.5))
-    # # output a softmax to squash the matrix into output probabilities
-    # model.add(Dense(num_classes, activation='softmax'))
-    # # categorical ce since we have multiple classes (10)
-    # model.compile(loss=keras.losses.categorical_crossentropy,
-    #             optimizer=keras.optimizers.Adam(lr=learning_rate),
-    #             metrics=['accuracy'])
-    #
-    # ####### TRAINING #######
-    # hist = model.fit(x_train, y_train,
-    #         batch_size=batch_size,
-    #         epochs=epochs,
-    #         verbose=2,
-    #         validation_split= 0.1)
-
     model = Sequential()
-
     # 1 - Convolution
     model.add(Conv2D(32, (3, 3), padding='same', input_shape=(28, 28, 1)))
-    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    #model.add(Dropout(0.25))
 
     # 2nd Convolution layer
     model.add(Conv2D(64, (3, 3), padding='same'))
-    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    #model.add(Dropout(0.25))
 
     # 3rd Convolution layer
     model.add(Conv2D(128, (3, 3), padding='same'))
-    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    #model.add(Dropout(0.25))
 
     # 4th Convolution layer
-    model.add(Conv2D(512, (3, 3), padding='same'))
-    model.add(BatchNormalization())
+    model.add(Conv2D(256, (3, 3), padding='same'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    #model.add(Dropout(0.25))
 
     # Flattening
     model.add(Flatten())
@@ -129,13 +79,7 @@ def train():
     model.add(Dense(256))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    model.add(Dropout(0.25))
-
-    # Fully connected layer 2nd layer
-    model.add(Dense(512))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
-    model.add(Dropout(0.25))
+    model.add(Dropout(0.5))
 
     model.add(Dense(num_classes, activation='softmax'))
 
@@ -145,9 +89,7 @@ def train():
 
     ##TRAIN##
     hist = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=2,
-                     validation_split=0.1)
-
-    #hist = model.fit_generator(datagen.flow(x_train, y_train, batch_size=32),steps_per_epoch = len(x_train) / 32, epochs = epochs)
+                     validation_split=0.2)
 
     # Evaluation
     score = model.evaluate(x_test, y_test, verbose=1)

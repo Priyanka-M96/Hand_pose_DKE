@@ -18,10 +18,10 @@ def load_KerasGraph(path):
     return model, graph, thread_session
 
 def classify(model, graph, sess, im):
+    #cv2.imshow("image", im)
     im = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)
 
     im = cv2.flip(im, 1)
-
     # Reshape
     res = cv2.resize(im, (28,28), interpolation=cv2.INTER_AREA)
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     print(">> loading keras model for pose classification")
     try:
-        model = keras.models.load_model("F:/Github/Hand_pose_DKE/cnn/models/hand_poses_wGarbage_10.h5")
+        model = keras.models.load_model("F:\Realtime_Hand_tracking\cnn\models\hand_poses_wGarbage_20.h5")
     except Exception as e:
         print(e)
 

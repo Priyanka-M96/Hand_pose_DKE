@@ -84,7 +84,9 @@ def get_box_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_he
         if (scores[i] > score_thresh):
             (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
                                           boxes[i][0] * im_height, boxes[i][2] * im_height)
+
             return image_np[int(top):int(bottom), int(left):int(right)].copy()
+
 
 # Show fps value on image.
 def draw_fps_on_image(fps, image_np):
