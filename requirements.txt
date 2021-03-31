@@ -20,7 +20,7 @@ Keras-Applications==1.0.8
 Keras-Preprocessing==1.0.5
 keyboard==0.13.5
 kiwisolver==1.0.1
-lxml==4.5.0
+lxml==4.6.3
 Markdown==3.0.1
 matplotlib==3.0.2
 numpy==1.16.0
