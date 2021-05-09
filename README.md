@@ -1,5 +1,3 @@
-(Still on working)
-
 This is a project based on real time motion detection. The ability to track the direction of hand movement. This project is completed with the help of the concept of "https://github.com/MrEliptik/HandPose##TODO", "https://github.com/victordibia/handtracking" and "https://github.com/jkjung-avt/hand-detection-tutorial". The hand weight models are extracted from pre trained open source and used the multiprocessing idea of HandPose library.
 
 The report of this project will be updated soon.
