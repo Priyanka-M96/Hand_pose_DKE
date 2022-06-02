@@ -11,7 +11,7 @@ google==2.0.3
 google-pasta==0.2.0
 grpcio==1.17.1
 h5py==2.8.0
-html5lib==0.9999999
+html5lib==0.99999999
 joblib==0.14.0
 jupyter==1.0.0
 jupyter-console==6.1.0
